@@ -175,8 +175,10 @@ class ResponseParser:
         # Validate each alternative separately
         # Skip invalid ones instead of failing completely
         validated_alternatives = []
+        skipped_alternatives = 0
         for alt in alternatives:
             if not isinstance(alt, dict):
+                skipped_alternatives += 1
                 continue
             
             alt_category = alt.get('category', '').strip()
@@ -190,9 +192,17 @@ class ResponseParser:
                         'category': alt_category,
                         'confidence': round(alt_confidence, 2)  # Round to 2 decimals
                     })
+                else:
+                    skipped_alternatives += 1
+                    logger.warning(f"Skipped invalid alternative: category='{alt_category}', confidence={alt_confidence}")
             except (ValueError, TypeError):
                 # Invalid confidence - skip this alternative
+                skipped_alternatives += 1
+                logger.warning(f"Skipped alternative with invalid confidence value")
                 continue
+        
+        if skipped_alternatives > 0:
+            logger.warning(f"Total alternatives skipped: {skipped_alternatives}")
 
         # ========================================================================
         # STEP 5: Return Normalized Response
@@ -236,5 +246,5 @@ class ResponseParser:
             'confidence_score': 0.0,  # 0.0 confidence = fallback/default value
             'reasoning': 'Unable to parse LLM response. Using fallback categorization.',
             'alternatives': [],
-            'status': 'success'
+            'status': 'fallback'
         }

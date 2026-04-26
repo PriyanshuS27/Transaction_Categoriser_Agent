@@ -14,7 +14,7 @@ class HistoricalTransactionSerializer(serializers.Serializer):
         category: Assigned category
     """
     description = serializers.CharField(max_length=500)
-    category = serializers.CharField(max_length=100)
+    category = serializers.CharField(max_length=100, min_length=2)
 
 
 class TransactionCategorizationSerializer(serializers.Serializer):
@@ -36,6 +36,7 @@ class TransactionCategorizationSerializer(serializers.Serializer):
         decimal_places=2,
         required=False,
         allow_null=True,
+        min_value=0,
         help_text="Transaction amount"
     )
     company_id = serializers.CharField(

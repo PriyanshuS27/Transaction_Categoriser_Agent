@@ -51,8 +51,7 @@ class ContextBuilder:
         # Validate all required parameters are present and have correct type
         if not description or not isinstance(description, str):
             raise ValueError("Transaction description is required and must be a string")
-        if not vendor or not isinstance(vendor, str):
-            raise ValueError("Vendor is required and must be a string")
+        vendor = vendor or "Unknown Vendor"
         if not chart_of_accounts or not isinstance(chart_of_accounts, list):
             raise ValueError("chart_of_accounts is required and must be a non-empty list")
 
@@ -98,7 +97,7 @@ class ContextBuilder:
         # Provide similar examples so LLM understands categorization patterns
         # Few-shot learning significantly improves LLM accuracy
         # Examples are worth thousands of words in prompt engineering
-        if historical_transactions and len(historical_transactions) > 0:
+        if historical_transactions:
             prompt += "HISTORICAL EXAMPLES (for reference):\n"
             for i, transaction in enumerate(historical_transactions, 1):
                 trans_desc = transaction.get('description', 'N/A')
@@ -137,5 +136,5 @@ class ContextBuilder:
 
         prompt += "Now, categorize this transaction:"
 
-        logger.info(f"Context built for transaction: {description[:50]}...")
+        logger.info(f"Context built successfully (length: {len(description)} chars)")
         return prompt

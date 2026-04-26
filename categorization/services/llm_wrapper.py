@@ -13,6 +13,7 @@ Architecture:
 import logging
 import os
 import time
+import uuid
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -116,7 +117,7 @@ class GroqProvider(LLMProvider):
         for attempt in range(MAX_RETRIES):
             try:
                 # Generate unique trace ID for request tracking
-                trace_id = request_id or f"req-{int(time.time())}"
+                trace_id = request_id or f"req-{uuid.uuid4().hex[:8]}"
                 logger.debug(f"[{trace_id}] Attempt {attempt + 1}/{MAX_RETRIES}: "
                            f"Sending request to Groq API")
                 
@@ -124,7 +125,13 @@ class GroqProvider(LLMProvider):
                 # temperature=0.3 ensures consistent, deterministic results
                 completion = self.client.chat.completions.create(
                     model=self.model,
-                    messages=[{"role": "user", "content": prompt}],
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert accounting categorization assistant. Always respond with valid JSON only. No markdown, no extra text."
+                        },
+                        {"role": "user", "content": prompt}
+                    ],
                     temperature=0.3  # Lower temperature = more consistent categorization
                 )
                 
