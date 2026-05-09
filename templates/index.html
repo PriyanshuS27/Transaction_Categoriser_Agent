@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Categorizer AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0F172A;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --accent-primary: #6366F1;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --text-primary: #F1F5F9;
+            --text-secondary: #CBD5E1;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0F172A 0%, #1a1f3a 50%, #0F172A 100%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        /* Animated background gradient */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+            animation: gradientShift 15s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.6);
+        }
+
+        /* Main container */
+        .container-fluid {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+
+        /* Header */
+        .header {
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #A78BFA 0%, #34D399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+            filter: brightness(1.1) saturate(1.2);
+            text-shadow: 0 0 20px rgba(167, 139, 250, 0.3), 0 0 40px rgba(52, 211, 153, 0.2);
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Main content area */
+        .content-wrapper {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        /* Left panel - Form */
+        .left-panel {
+            flex: 0 0 40%;
+            min-width: 0;
+            padding: 2rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border-right: 1px solid var(--border-color);
+            animation: slideInLeft 0.6s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Right panel - Results */
+        .right-panel {
+            flex: 0 0 60%;
+            min-width: 0;
+            padding: 2rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            animation: slideInRight 0.6s ease-out 0.1s both;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Form card */
+        .form-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            animation: popIn 0.5s ease-out;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .form-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 12px 48px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Form group */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(241, 245, 249, 0.4);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2),
+                        inset 0 0 0 1px rgba(99, 102, 241, 0.4);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            max-height: 150px;
+        }
+
+        .hint-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Amount field with currency symbol */
+        .amount-wrapper {
+            position: relative;
+        }
+
+        .currency-symbol {
+            position: absolute;
+            left: 1rem;
+            top: 2.3rem;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        .amount-wrapper input {
+            padding-left: 2rem;
+        }
+
+        /* Button group */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .button-group button {
+            flex: 1;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(99, 102, 241, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #818CF8 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Results panel - placeholder */
+        .placeholder-state {
+            text-align: center;
+            color: var(--text-secondary);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .placeholder-state-text {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .placeholder-arrow {
+            display: inline-block;
+            font-size: 2rem;
+            animation: bounceArrow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes bounceArrow {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(8px); }
+        }
+
+        /* Results content */
+        .results-content {
+            width: 100%;
+            max-width: 600px;
+            animation: fadeIn 0.6s ease-out;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Category card */
+        .category-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .category-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: popIn 0.6s ease-out 0.2s both;
+        }
+
+        .category-name {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #818CF8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Confidence bar */
+        .confidence-wrapper {
+            margin-bottom: 1.5rem;
+        }
+
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .confidence-bar {
+            background: rgba(255, 255, 255, 0.08);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--accent-primary), #818CF8);
+            width: 0%;
+            animation: fillBar 1.5s ease-out forwards;
+        }
+
+        .confidence-fill.success { background: linear-gradient(90deg, var(--success), #34D399); }
+        .confidence-fill.warning { background: linear-gradient(90deg, var(--warning), #FBBF24); }
+        .confidence-fill.danger { background: linear-gradient(90deg, var(--danger), #F87171); }
+
+        @keyframes fillBar {
+            from { width: 0%; }
+            to { width: var(--confidence); }
+        }
+
+        .confidence-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 0.75rem;
+        }
+
+        .confidence-number-value {
+            animation: countUp 1.5s ease-out forwards;
+            counter-increment: conf 0;
+        }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            animation: slideUp 0.6s ease-out 0.2s both;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .badge-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        /* Reasoning card */
+        .reasoning-card {
+            background: rgba(99, 102, 241, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            animation: slideUp 0.6s ease-out 0.3s both;
+        }
+
+        .reasoning-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .reasoning-text {
+            font-style: italic;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Alternatives section */
+        .alternatives-section {
+            animation: slideUp 0.6s ease-out 0.4s both;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .alternatives-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .alternative-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .alternative-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .alternative-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .mini-progress-bar {
+            background: rgba(255, 255, 255, 0.08);
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .mini-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), #818CF8);
+            border-radius: 2px;
+            width: 0%;
+            animation: fillBar 1.5s ease-out forwards;
+        }
+
+        .alternative-confidence {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+        }
+
+        /* Raw JSON toggle */
+        .raw-json-section {
+            margin-top: 1.5rem;
+            animation: slideUp 0.6s ease-out 0.5s both;
+        }
+
+        .json-toggle {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .json-toggle:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-primary);
+        }
+
+        .json-toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .json-toggle.active .json-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .json-content {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 1rem;
+            margin-top: -1px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .json-content.active {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .json-text {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        /* Loading state */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            animation: fadeIn 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        .loading-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            text-align: center;
+        }
+
+        .loading-step {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            opacity: 0;
+            animation: stepAppear 0.6s ease-out forwards;
+        }
+
+        .loading-step:nth-child(1) { animation-delay: 0.2s; }
+        .loading-step:nth-child(2) { animation-delay: 1s; }
+        .loading-step:nth-child(3) { animation-delay: 1.8s; }
+
+        @keyframes stepAppear {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 2rem;
+            height: 2rem;
+            border: 2px solid rgba(99, 102, 241, 0.2);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error state */
+        .error-card {
+            background: rgba(239, 68, 68, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            animation: shake 0.5s ease-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .error-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: popIn 0.5s ease-out;
+        }
+
+        .error-message {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .error-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--danger);
+            margin-bottom: 0.75rem;
+        }
+
+        .btn-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-error:hover {
+            background: rgba(239, 68, 68, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 1400px) {
+            .left-panel {
+                flex: 0 0 38%;
+                padding: 1.5rem;
+            }
+
+            .right-panel {
+                flex: 0 0 62%;
+                padding: 1.5rem;
+            }
+
+            .category-name {
+                font-size: 1.5rem;
+            }
+
+            .category-icon {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .left-panel {
+                flex: 0 0 40%;
+                padding: 1.2rem;
+            }
+
+            .right-panel {
+                flex: 0 0 60%;
+                padding: 1.2rem;
+            }
+
+            .header-title {
+                font-size: 1.4rem;
+            }
+
+            .form-card {
+                padding: 1.5rem;
+            }
+
+            .category-card {
+                padding: 1.5rem;
+            }
+
+            .category-name {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .content-wrapper {
+                flex-direction: column;
+            }
+
+            .left-panel,
+            .right-panel {
+                flex: 0 0 auto;
+                width: 100%;
+                max-height: 50vh;
+            }
+
+            .left-panel {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding: 1.5rem;
+            }
+
+            .right-panel {
+                padding: 1.5rem;
+            }
+
+            .alternatives-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 1.3rem;
+            }
+
+            .left-panel,
+            .right-panel {
+                padding: 1rem;
+                max-height: 50vh;
+            }
+
+            .form-card {
+                padding: 1.2rem;
+            }
+
+            .category-card {
+                padding: 1.2rem;
+            }
+
+            .category-name {
+                font-size: 1.2rem;
+            }
+
+            .category-icon {
+                font-size: 2rem;
+            }
+
+            .form-group input,
+            .form-group textarea {
+                font-size: 0.9rem;
+                padding: 0.6rem 0.8rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .button-group button {
+                padding: 0.8rem 1.2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .header-title {
+                font-size: 1.1rem;
+            }
+
+            .header-subtitle {
+                font-size: 0.75rem;
+            }
+
+            .left-panel,
+            .right-panel {
+                padding: 0.8rem;
+                max-height: 50vh;
+            }
+
+            .form-card {
+                padding: 1rem;
+            }
+
+            .category-card {
+                padding: 1rem;
+            }
+
+            .category-name {
+                font-size: 1rem;
+            }
+
+            .category-icon {
+                font-size: 1.5rem;
+            }
+
+            .form-group label {
+                font-size: 0.85rem;
+            }
+
+            .form-group input,
+            .form-group textarea {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.7rem;
+            }
+
+            .button-group button {
+                padding: 0.7rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .alternatives-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .reasoning-card {
+                padding: 1rem;
+            }
+
+            .reasoning-text {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div>
+                    <h1 class="header-title">🤖 Transaction Categorizer AI</h1>
+                    <p class="header-subtitle">Powered by advanced AI classification</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content-wrapper">
+            <!-- Left Panel - Form -->
+            <div class="left-panel">
+                <div class="form-card">
+                    <form id="categorizationForm">
+                        <div class="form-group">
+                            <label for="description">Transaction Description *</label>
+                            <textarea id="description" placeholder="Enter the transaction description..." required></textarea>
+                            <p class="hint-text">What is this transaction about?</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vendor">Vendor Name</label>
+                            <input type="text" id="vendor" placeholder="e.g., Amazon, Stripe, etc.">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="amount">Amount (₹) *</label>
+                            <div class="amount-wrapper">
+                                <span class="currency-symbol">₹</span>
+                                <input type="number" id="amount" placeholder="0.00" step="0.01" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="industry">Industry/Business Type *</label>
+                            <input type="text" id="industry" placeholder="e.g., SaaS, Retail, etc." required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="coa">Chart of Accounts *</label>
+                            <textarea id="coa" placeholder="Enter comma-separated accounts..." required></textarea>
+                            <p class="hint-text">e.g., Office Supplies, Software & Subscriptions, Travel & Entertainment</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="historical">Historical Transactions (Optional)</label>
+                            <textarea id="historical" placeholder="Provide historical transactions for better context..."></textarea>
+                            <p class="hint-text">This helps the AI understand patterns</p>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="button" class="btn-secondary" onclick="loadSampleData()">📋 Load Sample Data</button>
+                            <button type="submit" class="btn-primary" id="submitBtn">Categorize Now →</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Panel - Results -->
+            <div class="right-panel">
+                <div id="resultsContainer">
+                    <div class="placeholder-state">
+                        <div class="placeholder-state-text">Run your first categorization</div>
+                        <div class="placeholder-arrow">→</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const API_ENDPOINT = '/api/categorize/';
+        const LOADING_STEPS = [
+            '🔍 Analyzing transaction...',
+            '🧠 Consulting AI model...',
+            '📊 Formatting results...'
+        ];
+
+        // Form submission
+        document.getElementById('categorizationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await categorizeTransaction();
+        });
+
+        // Load sample data
+        function loadSampleData() {
+            document.getElementById('description').value = 'AWS server subscription renewal';
+            document.getElementById('vendor').value = 'Amazon Web Services';
+            document.getElementById('amount').value = '15000';
+            document.getElementById('industry').value = 'IT Services';
+            document.getElementById('coa').value = 'Software & Subscriptions, Office Supplies, Travel & Entertainment, Payroll, Professional Services, Utilities';
+            document.getElementById('historical').value = 'Previous AWS bill: $12,000 (July)\nPrevious AWS bill: $14,500 (August)';
+            
+            // Scroll to form for mobile
+            document.querySelector('.left-panel').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Categorize transaction
+        async function categorizeTransaction() {
+            const description = document.getElementById('description').value;
+            const vendor = document.getElementById('vendor').value;
+            const amount = document.getElementById('amount').value;
+            const industry = document.getElementById('industry').value;
+            const coa = document.getElementById('coa').value;
+            const historical = document.getElementById('historical').value;
+
+            if (!description || !amount || !industry || !coa) {
+                showError('Please fill in all required fields');
+                return;
+            }
+
+            // Show loading state
+            showLoading();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+
+            try {
+                // Parse chart of accounts into a list
+                const accountList = coa.split(',').map(acc => acc.trim()).filter(acc => acc);
+                
+                // Parse historical transactions (simple format: "Description -> Category")
+                let historicalList = [];
+                if (historical) {
+                    const lines = historical.split('\n').filter(line => line.trim());
+                    historicalList = lines.map(line => {
+                        const parts = line.split('->');
+                        return {
+                            description: parts[0]?.trim() || line.trim(),
+                            category: parts[1]?.trim() || 'Other'
+                        };
+                    });
+                }
+
+                // Prepare JSON payload - matching serializer field names
+                const payload = {
+                    description: description,
+                    vendor: vendor,
+                    amount: parseFloat(amount),
+                    company_id: 'default',  // Default company ID
+                    industry: industry,
+                    chart_of_accounts: accountList,
+                    historical_transactions: historicalList
+                };
+
+                // Make API call with JSON
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${error}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Failed to categorize transaction: ${error.message}`);
+            } finally {
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Display results
+        function displayResults(data) {
+            const container = document.getElementById('resultsContainer');
+            const resultsContent = document.createElement('div');
+            resultsContent.className = 'results-content';
+
+            // Extract data - using correct field names from response serializer
+            const category = data.suggested_category || 'Unknown';
+            const confidence = parseFloat(data.confidence_score) * 100 || 0;  // Convert to percentage
+            const reasoning = data.reasoning || 'No reasoning provided';
+            const alternatives = data.alternatives || [];
+            const status = data.status || 'success';
+            const rawJson = JSON.stringify(data, null, 2);
+
+            // Determine status badge
+            let statusClass = 'success';
+            let statusText = '✅ Success';
+            if (status === 'needs_review') {
+                statusClass = 'warning';
+                statusText = '⚠️ Needs Review';
+            } else if (status === 'fallback') {
+                statusClass = 'danger';
+                statusText = '🔄 Fallback';
+            }
+
+            // Determine confidence color
+            let confidenceClass = 'success';
+            if (confidence < 40) {
+                confidenceClass = 'danger';
+            } else if (confidence < 70) {
+                confidenceClass = 'warning';
+            }
+
+            // Get category emoji
+            const categoryEmoji = getCategoryEmoji(category);
+
+            // Build results HTML
+            resultsContent.innerHTML = `
+                <div class="category-card">
+                    <div class="category-icon">${categoryEmoji}</div>
+                    <h2 class="category-name">${escapeHtml(category)}</h2>
+                    
+                    <div class="status-badge badge-${statusClass}">${statusText}</div>
+
+                    <div class="confidence-wrapper">
+                        <div class="confidence-label">
+                            <span>Confidence Level</span>
+                            <span id="confPercentage">0%</span>
+                        </div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill ${confidenceClass}" style="--confidence: ${confidence}%;" id="confBar"></div>
+                        </div>
+                        <div class="confidence-number">
+                            <span class="confidence-number-value" id="confNumber">0</span>%
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reasoning-card">
+                    <div class="reasoning-header">💡 AI Reasoning</div>
+                    <div class="reasoning-text">${escapeHtml(reasoning)}</div>
+                </div>
+
+                ${alternatives.length > 0 ? `
+                    <div class="alternatives-section">
+                        <h3 class="section-title">Alternative Categories</h3>
+                        <div class="alternatives-grid">
+                            ${alternatives.map(alt => {
+                                const altConfidence = parseFloat(alt.confidence) * 100;
+                                return `
+                                    <div class="alternative-card">
+                                        <div class="alternative-name">${escapeHtml(alt.category)}</div>
+                                        <div class="mini-progress-bar">
+                                            <div class="mini-progress-fill" style="--confidence: ${altConfidence}%;"></div>
+                                        </div>
+                                        <div class="alternative-confidence">${altConfidence.toFixed(1)}%</div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="raw-json-section">
+                    <button type="button" class="json-toggle" onclick="toggleJsonView(this)">
+                        <span>📋 View Raw JSON</span>
+                        <span class="json-toggle-icon">▼</span>
+                    </button>
+                    <div class="json-content">
+                        <pre class="json-text">${escapeHtml(rawJson)}</pre>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = '';
+            container.appendChild(resultsContent);
+
+            // Animate numbers
+            animateConfidenceNumber(confidence);
+
+            // Scroll to results
+            document.querySelector('.right-panel').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Show loading state
+        function showLoading() {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = `
+                <div class="loading-overlay" style="position: relative; width: 100%; height: 300px;">
+                    <div class="spinner"></div>
+                    <div class="loading-steps">
+                        <div class="loading-step">🔍 Analyzing transaction...</div>
+                        <div class="loading-step">🧠 Consulting AI model...</div>
+                        <div class="loading-step">📊 Formatting results...</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show error state
+        function showError(message) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = `
+                <div class="error-card">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-title">Categorization Failed</div>
+                    <div class="error-message">${escapeHtml(message)}</div>
+                    <button type="button" class="btn-error" onclick="resetResults()">🔄 Try Again</button>
+                </div>
+            `;
+        }
+
+        // Toggle JSON view
+        function toggleJsonView(button) {
+            const jsonContent = button.nextElementSibling;
+            button.classList.toggle('active');
+            jsonContent.classList.toggle('active');
+        }
+
+        // Animate confidence number
+        function animateConfidenceNumber(target) {
+            const confNumber = document.getElementById('confNumber');
+            const confPercentage = document.getElementById('confPercentage');
+            const duration = 1500;
+            const startTime = Date.now();
+
+            function update() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = Math.floor(progress * target);
+                
+                confNumber.textContent = current;
+                confPercentage.textContent = current + '%';
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // Get category emoji
+        function getCategoryEmoji(category) {
+            const emojiMap = {
+                'software': '💻',
+                'subscriptions': '📦',
+                'travel': '✈️',
+                'office': '🏢',
+                'payroll': '💰',
+                'supplies': '📎',
+                'utilities': '⚡',
+                'professional': '👔',
+                'entertainment': '🎭',
+                'meals': '🍽️',
+                'transport': '🚗',
+                'other': '📌'
+            };
+
+            const lower = category.toLowerCase();
+            for (const [key, emoji] of Object.entries(emojiMap)) {
+                if (lower.includes(key)) {
+                    return emoji;
+                }
+            }
+            return '📁';
+        }
+
+        // Reset results
+        function resetResults() {
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="placeholder-state">
+                    <div class="placeholder-state-text">Run your first categorization</div>
+                    <div class="placeholder-arrow">→</div>
+                </div>
+            `;
+        }
+
+        // Utility: Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Utility: Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
+from django.shortcuts import render
 
 from categorization.serializers import (
     TransactionCategorizationSerializer,
@@ -17,6 +18,11 @@ from categorization.services.llm_wrapper import LLMWrapper, GroqProvider
 from categorization.services.response_parser import ResponseParser
 
 logger = logging.getLogger(__name__)
+
+
+def home(request):
+    """Serve the transaction categorizer UI."""
+    return render(request, 'index.html')
 
 
 class CategorizationView(APIView):

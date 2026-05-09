@@ -29,6 +29,8 @@ class TransactionCategorizationSerializer(serializers.Serializer):
     )
     vendor = serializers.CharField(
         max_length=200,
+        required=False,
+        allow_blank=True,
         help_text="Vendor or payee name"
     )
     amount = serializers.DecimalField(
